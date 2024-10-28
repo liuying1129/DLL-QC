@@ -6,8 +6,8 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Grids, DBGrids, DB, ADODB,StdCtrls, Buttons, ExtCtrls,
   DBCtrls, DosMove, TeeProcs, TeEngine, Chart, DbChart, Series, TeeFunci,
-  ActnList, FR_DSet, FR_DBSet, FR_Class,fr_chart,DateUtils, ADOLYGetcode,
-  UfrmLocateRecord;
+  ActnList, DateUtils, ADOLYGetcode,
+  UfrmLocateRecord, frxClass, frxDBSet;
 
 type
   TfrmQCG2 = class(TForm)
@@ -42,8 +42,6 @@ type
     ActDEL2: TAction;
     ActQCANA: TAction;
     ActPRINTQC: TAction;
-    frReport1: TfrReport;
-    frDBDataSet1: TfrDBDataSet;
     LabeledEdit14: TLabeledEdit;
     LabeledEdit15: TLabeledEdit;
     LabeledEdit20: TLabeledEdit;
@@ -106,6 +104,9 @@ type
     Label1: TLabel;
     BitBtn4: TBitBtn;
     SpeedButton1: TSpeedButton;
+    frxReport1: TfrxReport;
+    frxDBDataset1: TfrxDBDataset;
+    frxDBDataset2: TfrxDBDataset;
     procedure FormShow(Sender: TObject);
     procedure BitBtn4Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -128,6 +129,9 @@ type
     procedure ADOQuery1AfterOpen(DataSet: TDataSet);
     procedure ADOQuery2AfterOpen(DataSet: TDataSet);
     procedure SpeedButton1Click(Sender: TObject);
+    procedure frxReport1BeforePrint(Sender: TfrxReportComponent);
+    procedure frxReport1GetValue(const VarName: String;
+      var Value: Variant);
   private
     { Private declarations }
     procedure ClearEdit;
@@ -588,71 +592,36 @@ end;
 
 procedure TfrmQCG2.BitBtn9Click(Sender: TObject);
 var
- t23,t26,t27,t29: TfrMemoView;
- t35,t38,t39,t41: TfrMemoView;
- t47,t50,t51,t53: TfrMemoView;
- ch1,ch2,ch3: TfrMemoView;
+  frxMasterData:TfrxMasterData;  
 begin
   if not FbRegister then exit;
   
-   if not adoquery1.Active then exit;
-   if adoquery1.RecordCount=0 then exit;
-   if not adoquery2.Active then exit;
-   if adoquery2.RecordCount=0 then exit;
-  if not frReport1.LoadFromFile('report_qc_assay2.frf') then
+  if not adoquery1.Active then exit;
+  if adoquery1.RecordCount=0 then exit;
+  if not adoquery2.Active then exit;
+  if adoquery2.RecordCount=0 then exit;
+   
+  frxReport1.Clear;//清除报表模板
+  frxDBDataSet1.UserName:='ADOQuery1';//加载模板文件前设置别名.因为一般设计模板文件时已经包含了别名信息
+  frxDBDataSet2.UserName:='ADOQuery2';//加载模板文件前设置别名.因为一般设计模板文件时已经包含了别名信息
+
+  if not frxReport1.LoadFromFile('report_qc_assay2.fr3') then
   begin
-    showmessage('加载打印模板report_qc_assay2.frf失败，请与开发商联系');
+    MessageDlg('加载打印模板report_qc_assay2.fr3失败，请与开发商联系',mtError,[mbOK],0);
     exit;
   end;
-  t23 := TfrMemoView(frReport1.FindObject('Memo23'));
-  t26 := TfrMemoView(frReport1.FindObject('Memo26'));
-  t27 := TfrMemoView(frReport1.FindObject('Memo27'));
-  t29 := TfrMemoView(frReport1.FindObject('Memo29'));
-
-  t35 := TfrMemoView(frReport1.FindObject('Memo35'));
-  t38 := TfrMemoView(frReport1.FindObject('Memo38'));
-  t39 := TfrMemoView(frReport1.FindObject('Memo39'));
-  t41 := TfrMemoView(frReport1.FindObject('Memo41'));
   
-  t47 := TfrMemoView(frReport1.FindObject('Memo47'));
-  t50 := TfrMemoView(frReport1.FindObject('Memo50'));
-  t51 := TfrMemoView(frReport1.FindObject('Memo51'));
-  t53 := TfrMemoView(frReport1.FindObject('Memo53'));
-  if(t23=nil)or(t26=nil)or(t27=nil)or(t29=nil)
-  or(t35=nil)or(t38=nil)or(t39=nil)or(t41=nil)
-  or(t47=nil)or(t50=nil)or(t51=nil)or(t53=nil) then
-  begin
-    showmessage('统计报表中没有发现MEMO23或MIMO26或MEMO27或MEMO29或MEMO35或MIMO38或MEMO39或MEMO41或MEMO47或MIMO50或MEMO51或MEMO53');
-    exit;
-  end;
-   T23.Memo.Text :=LABELEDEDIT10.Text ;
-   T26.Memo.Text :=LABELEDEDIT9.Text ;
-   T27.Memo.Text :=LABELEDEDIT12.Text ;
-   T29.Memo.Text :=LABELEDEDIT13.Text ;
-
-   T35.Memo.Text :=LABELEDEDIT16.Text ;
-   T38.Memo.Text :=LABELEDEDIT17.Text ;
-   T39.Memo.Text :=LABELEDEDIT18.Text ;
-   T41.Memo.Text :=LABELEDEDIT19.Text ;
-
-   T47.Memo.Text :=LABELEDEDIT22.Text ;
-   T50.Memo.Text :=LABELEDEDIT23.Text ;
-   T51.Memo.Text :=LABELEDEDIT24.Text ;
-   T53.Memo.Text :=LABELEDEDIT25.Text ;
-
-   ch1:= TfrMemoView(frReport1.FindObject('Chart1'));
-   ch2:= TfrMemoView(frReport1.FindObject('Chart2'));
-   ch3:= TfrMemoView(frReport1.FindObject('Chart3'));
-  if ch1.Name='Chart1' then
-      TfrChartView(ch1).Assignchart(dbchart1);
-  if ch2.Name='Chart2' then
-      TfrChartView(ch2).Assignchart(dbchart2);
-  if ch3.Name='Chart3' then
-      TfrChartView(ch3).Assignchart(dbchart3);
-  if not ifDrawHLJ then TfrMemoView(ch1).Visible:=false else TfrMemoView(ch1).Visible:=true;
-  if not ifDrawLJ then TfrMemoView(ch2).Visible:=false else TfrMemoView(ch2).Visible:=true;
-  if not ifDrawLLJ then TfrMemoView(ch3).Visible:=false else TfrMemoView(ch3).Visible:=true;
-  frReport1.ShowReport;
+  frxDBDataSet1.DataSet:=ADOQuery1;//关联Fastreport的组件与TDataset数据集
+  frxDBDataSet2.DataSet:=ADOQuery2;//关联Fastreport的组件与TDataset数据集
+  frxReport1.DataSets.Clear;//清除原来的数据集
+  frxReport1.DataSets.Add(frxDBDataSet1);//加载关联好的TfrxDBDataSet到报表中
+  frxReport1.DataSets.Add(frxDBDataSet2);//加载关联好的TfrxDBDataSet到报表中
+  
+  frxMasterData:=frxReport1.FindObject('MasterData1') as TfrxMasterData;
+  if (frxMasterData<>nil) and (frxMasterData is TfrxMasterData) then frxMasterData.DataSet:=frxDBDataSet2;//动态配置MasterData.DataSet
+  
+  frxReport1.PrintOptions.ShowDialog:=true;
+  frxReport1.ShowReport;
 end;
 
 procedure TfrmQCG2.update_adoquery1;
@@ -705,6 +674,7 @@ begin
         exit;
 
         DBCHART1.LeftAxis.SetMinMax(x-3.2*f,x+3.2*f);
+        DBCHART1.BevelOuter:=bvNone;//如不设置该属性,则打印时底部、右边各有一条灰色线
 
         adotemp47:=tadoquery.Create(nil);
         adotemp47.Connection:=ADOConnection1;
@@ -767,6 +737,7 @@ begin
         exit;
 
         DBCHART2.LeftAxis.SetMinMax(x-3.2*f,x+3.2*f);
+        DBCHART2.BevelOuter:=bvNone;//如不设置该属性,则打印时底部、右边各有一条灰色线
 
         adotemp47:=tadoquery.Create(nil);
         adotemp47.Connection:=ADOConnection1;
@@ -831,6 +802,7 @@ begin
         exit;
 
         DBCHART3.LeftAxis.SetMinMax(x-3.2*f,x+3.2*f);
+        DBCHART3.BevelOuter:=bvNone;//如不设置该属性,则打印时底部、右边各有一条灰色线
 
         adotemp47:=tadoquery.Create(nil);
         adotemp47.Connection:=ADOConnection1;
@@ -1172,6 +1144,45 @@ begin
   LYLocateRecord.DataSource:=DataSource1;
   LYLocateRecord.Execute;
   LYLocateRecord.free;
+end;
+
+procedure TfrmQCG2.frxReport1BeforePrint(Sender: TfrxReportComponent);
+begin
+  if TfrxPictureView(Sender).Name='PictureHigh' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart1.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+    if not ifDrawHLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+  if TfrxPictureView(Sender).Name='PictureMid' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart2.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+    if not ifDrawLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+  if TfrxPictureView(Sender).Name='PictureLow' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart3.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+   if not ifDrawLLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+end;
+
+procedure TfrmQCG2.frxReport1GetValue(const VarName: String;
+  var Value: Variant);
+begin
+  if VarName='HighCalaAvg' then Value:=LabeledEdit17.Text;
+  if VarName='MidCalaAvg' then Value:=LabeledEdit9.Text;
+  if VarName='LowCalaAvg' then Value:=LabeledEdit23.Text;
+  
+  if VarName='HighCalaSD' then Value:=LabeledEdit18.Text;
+  if VarName='MidCalaSD' then Value:=LabeledEdit12.Text;
+  if VarName='LowCalaSD' then Value:=LabeledEdit24.Text;
+  
+  if VarName='HighCalaCV' then Value:=LabeledEdit19.Text;
+  if VarName='MidCalaCV' then Value:=LabeledEdit13.Text;
+  if VarName='LowCalaCV' then Value:=LabeledEdit25.Text;
+  
+  if VarName='HighCV' then Value:=LabeledEdit16.Text;
+  if VarName='MidCV' then Value:=LabeledEdit10.Text;
+  if VarName='LowCV' then Value:=LabeledEdit22.Text;
 end;
 
 initialization

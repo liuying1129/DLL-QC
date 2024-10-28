@@ -1262,23 +1262,72 @@ object frmQCG2: TfrmQCG2
       OnExecute = BitBtn9Click
     end
   end
-  object frReport1: TfrReport
-    InitialZoom = pzDefault
-    ModifyPrepared = False
-    PreviewButtons = [pbZoom, pbLoad, pbSave, pbPrint, pbFind, pbHelp, pbExit]
-    RebuildPrinter = False
-    Left = 310
-    Top = 312
-    ReportForm = {19000000}
-  end
-  object frDBDataSet1: TfrDBDataSet
-    DataSet = ADOQuery2
-    Left = 342
-    Top = 312
-  end
   object ADOConnection1: TADOConnection
     LoginPrompt = False
     Left = 377
     Top = 280
+  end
+  object frxReport1: TfrxReport
+    Version = '5.4.6'
+    DotMatrixReport = False
+    IniFile = '\Software\Fast Reports'
+    PreviewOptions.Buttons = [pbPrint, pbLoad, pbSave, pbExport, pbZoom, pbFind, pbOutline, pbPageSetup, pbTools, pbEdit, pbNavigator, pbExportQuick]
+    PreviewOptions.Zoom = 1.000000000000000000
+    PrintOptions.Printer = #39044#35774
+    PrintOptions.PrintOnSheet = 0
+    ReportOptions.CreateDate = 45592.648687002310000000
+    ReportOptions.LastChange = 45592.660449421300000000
+    ScriptLanguage = 'PascalScript'
+    ScriptText.Strings = (
+      'begin'
+      ''
+      'end.')
+    OnBeforePrint = frxReport1BeforePrint
+    OnGetValue = frxReport1GetValue
+    Left = 312
+    Top = 248
+    Datasets = <>
+    Variables = <>
+    Style = <>
+    object Data: TfrxDataPage
+      Height = 1000.000000000000000000
+      Width = 1000.000000000000000000
+    end
+    object Page1: TfrxReportPage
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -13
+      Font.Name = #23435#20307
+      Font.Style = []
+      PaperWidth = 210.000000000000000000
+      PaperHeight = 297.000000000000000000
+      PaperSize = 9
+      LeftMargin = 10.000000000000000000
+      RightMargin = 10.000000000000000000
+      TopMargin = 10.000000000000000000
+      BottomMargin = 10.000000000000000000
+      object Memo1: TfrxMemoView
+        Left = 128.504020000000000000
+        Top = 86.929190000000000000
+        Width = 94.488250000000000000
+        Height = 18.897650000000000000
+        Memo.UTF8 = (
+          'A')
+      end
+    end
+  end
+  object frxDBDataset1: TfrxDBDataset
+    UserName = 'frxDBDataset1'
+    CloseDataSource = False
+    BCDToCurrency = False
+    Left = 344
+    Top = 248
+  end
+  object frxDBDataset2: TfrxDBDataset
+    UserName = 'frxDBDataset1'
+    CloseDataSource = False
+    BCDToCurrency = False
+    Left = 377
+    Top = 248
   end
 end
