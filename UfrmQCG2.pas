@@ -3,11 +3,11 @@ unit UfrmQCG2;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Grids, DBGrids, DB, ADODB,StdCtrls, Buttons, ExtCtrls,
-  DBCtrls, DosMove, TeeProcs, TeEngine, Chart, DbChart, Series, TeeFunci,
-  ActnList, DateUtils, ADOLYGetcode,
-  UfrmLocateRecord, frxClass, frxDBSet;
+  Windows, Messages, SysUtils, Classes, Controls, Forms,
+  Dialogs, Grids, DBGrids, DB, ADODB, Buttons, 
+  DosMove, TeeProcs, TeEngine, Chart, DbChart, Series, 
+  ActnList, DateUtils, ADOLYGetcode, UfrmLocateRecord, 
+  frxClass, frxDBSet, StdCtrls, ExtCtrls;
 
 type
   TfrmQCG2 = class(TForm)
