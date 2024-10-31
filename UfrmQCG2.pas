@@ -7,7 +7,7 @@ uses
   Dialogs, Grids, DBGrids, DB, ADODB, Buttons, 
   DosMove, TeeProcs, TeEngine, Chart, DbChart, Series, 
   ActnList, DateUtils, ADOLYGetcode, UfrmLocateRecord, 
-  frxClass, frxDBSet, StdCtrls, ExtCtrls;
+  frxClass, frxDBSet, StdCtrls, ExtCtrls, frxExportPDF;
 
 type
   TfrmQCG2 = class(TForm)
@@ -107,6 +107,7 @@ type
     frxReport1: TfrxReport;
     frxDBDataset1: TfrxDBDataset;
     frxDBDataset2: TfrxDBDataset;
+    frxPDFExport1: TfrxPDFExport;
     procedure FormShow(Sender: TObject);
     procedure BitBtn4Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -132,6 +133,7 @@ type
     procedure frxReport1BeforePrint(Sender: TfrxReportComponent);
     procedure frxReport1GetValue(const VarName: String;
       var Value: Variant);
+    procedure LabeledEdit32DropDown(Sender: TObject);
   private
     { Private declarations }
     procedure ClearEdit;
@@ -143,6 +145,7 @@ type
     procedure updatecharth;
     procedure updatechartl;
     procedure InsertQcValueItem(qcghead_unid:integer;qcyear,qcmonth:Word);//插入质控结果（一个月的天数）
+    procedure LoadGroupName(const comboBox:TcomboBox;const ASel:string);
   public
     { Public declarations }
     FConnString:string;
@@ -164,7 +167,7 @@ procedure WriteLog(const ALogStr: Pchar);stdcall;external 'LYFunction.dll';
 
   {$R *.dfm}
 
-function ExecSQLCmd(AConnectionString:string;ASQL:string):integer;
+function ExecSQLCmd(AConnectionString:string;ASQL:string;AErrorDlg:boolean=True):integer;
 var
   Conn:TADOConnection;
   Qry:TAdoQuery;
@@ -182,7 +185,8 @@ begin
   except
     on E:Exception do
     begin
-      MESSAGEDLG('函数ExecSQLCmd失败:'+E.Message+'。错误的SQL:'+ASQL,mtError,[mbOK],0);
+      if AErrorDlg then MESSAGEDLG('函数ExecSQLCmd失败:'+E.Message+'。错误的SQL:'+ASQL,mtError,[mbOK],0)
+        else WriteLog(pchar('函数ExecSQLCmd失败:'+E.Message+'。错误的SQL:'+ASQL));
       Result:=-1;
     end;
   end;
@@ -208,7 +212,6 @@ end;
 procedure TfrmQCG2.FormShow(Sender: TObject);
 var
   i:integer;
-  QryTemp:TAdoQuery;
 begin
   //=======================初始化数据控件=====================================//
   ADOConnection1.ConnectionString:=FConnString;
@@ -222,19 +225,6 @@ begin
 
   labelededit28.ItemIndex:=labelededit28.Items.IndexOf(inttostr(YearOf(now)));
   labelededit29.ItemIndex:=labelededit29.Items.IndexOf(inttostr(Monthof(now)));
-
-  QryTemp:=TAdoQuery.Create(nil);
-  QryTemp.Connection:=ADOConnection1;
-  QryTemp.Close;
-  QryTemp.SQL.Clear;
-  QryTemp.SQL.Text:='select * from commcode where typename=''样本类型'' ';
-  QryTemp.Open;
-  while not QryTemp.Eof do
-  begin
-    Labelededit32.Items.Add(trim(QryTemp.fieldbyname('name').AsString));
-    QryTemp.Next;
-  end;
-  QryTemp.Free;//载入标本类型
 
   update_adoquery1;//载入qcghead
   
@@ -624,6 +614,45 @@ begin
   frxReport1.ShowReport;
 end;
 
+procedure TfrmQCG2.frxReport1BeforePrint(Sender: TfrxReportComponent);
+begin
+  if TfrxPictureView(Sender).Name='PictureHigh' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart1.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+    if not ifDrawHLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+  if TfrxPictureView(Sender).Name='PictureMid' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart2.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+    if not ifDrawLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+  if TfrxPictureView(Sender).Name='PictureLow' then
+  begin
+    TfrxPictureView(Sender).Picture.Assign(dbchart3.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
+   if not ifDrawLLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
+  end;
+end;
+
+procedure TfrmQCG2.frxReport1GetValue(const VarName: String;
+  var Value: Variant);
+begin
+  if VarName='HighCalaAvg' then Value:=LabeledEdit17.Text;
+  if VarName='MidCalaAvg' then Value:=LabeledEdit9.Text;
+  if VarName='LowCalaAvg' then Value:=LabeledEdit23.Text;
+  
+  if VarName='HighCalaSD' then Value:=LabeledEdit18.Text;
+  if VarName='MidCalaSD' then Value:=LabeledEdit12.Text;
+  if VarName='LowCalaSD' then Value:=LabeledEdit24.Text;
+  
+  if VarName='HighCalaCV' then Value:=LabeledEdit19.Text;
+  if VarName='MidCalaCV' then Value:=LabeledEdit13.Text;
+  if VarName='LowCalaCV' then Value:=LabeledEdit25.Text;
+  
+  if VarName='HighCV' then Value:=LabeledEdit16.Text;
+  if VarName='MidCV' then Value:=LabeledEdit10.Text;
+  if VarName='LowCV' then Value:=LabeledEdit22.Text;
+end;
+
 procedure TfrmQCG2.update_adoquery1;
 var
   sqlstr:string;
@@ -879,7 +908,6 @@ begin
     dbgrid2.Columns.Items[1].ReadOnly:=false;
     dbgrid2.Columns.Items[2].ReadOnly:=false;
     dbgrid2.Columns.Items[3].ReadOnly:=false;
-
 end;
 
 procedure TfrmQCG2.BitBtn2Click(Sender: TObject);
@@ -1146,43 +1174,35 @@ begin
   LYLocateRecord.free;
 end;
 
-procedure TfrmQCG2.frxReport1BeforePrint(Sender: TfrxReportComponent);
+procedure TfrmQCG2.LoadGroupName(const comboBox: TcomboBox;
+  const ASel: string);
+var
+  adotemp3:tadoquery;
+  tempstr:string;
 begin
-  if TfrxPictureView(Sender).Name='PictureHigh' then
-  begin
-    TfrxPictureView(Sender).Picture.Assign(dbchart1.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
-    if not ifDrawHLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
-  end;
-  if TfrxPictureView(Sender).Name='PictureMid' then
-  begin
-    TfrxPictureView(Sender).Picture.Assign(dbchart2.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
-    if not ifDrawLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
-  end;
-  if TfrxPictureView(Sender).Name='PictureLow' then
-  begin
-    TfrxPictureView(Sender).Picture.Assign(dbchart3.TeeCreateMetafile(False,Rect(0,0,Round(Sender.Width),Round(Sender.Height))));//指定统计图給FastReport
-   if not ifDrawLLJ then TfrxPictureView(Sender).Visible:=false else TfrxPictureView(Sender).Visible:=true;
-  end;
+     adotemp3:=tadoquery.Create(nil);
+     adotemp3.Connection:=ADOConnection1;
+     adotemp3.Close;
+     adotemp3.SQL.Clear;
+     adotemp3.SQL.Text:=ASel;
+     adotemp3.Open;
+     
+     comboBox.Items.Clear;//加载前先清除comboBox项
+
+     while not adotemp3.Eof do
+     begin
+      tempstr:=trim(adotemp3.Fields[0].AsString);
+
+      comboBox.Items.Add(tempstr); //加载到comboBox
+
+      adotemp3.Next;
+     end;
+     adotemp3.Free;
 end;
 
-procedure TfrmQCG2.frxReport1GetValue(const VarName: String;
-  var Value: Variant);
+procedure TfrmQCG2.LabeledEdit32DropDown(Sender: TObject);
 begin
-  if VarName='HighCalaAvg' then Value:=LabeledEdit17.Text;
-  if VarName='MidCalaAvg' then Value:=LabeledEdit9.Text;
-  if VarName='LowCalaAvg' then Value:=LabeledEdit23.Text;
-  
-  if VarName='HighCalaSD' then Value:=LabeledEdit18.Text;
-  if VarName='MidCalaSD' then Value:=LabeledEdit12.Text;
-  if VarName='LowCalaSD' then Value:=LabeledEdit24.Text;
-  
-  if VarName='HighCalaCV' then Value:=LabeledEdit19.Text;
-  if VarName='MidCalaCV' then Value:=LabeledEdit13.Text;
-  if VarName='LowCalaCV' then Value:=LabeledEdit25.Text;
-  
-  if VarName='HighCV' then Value:=LabeledEdit16.Text;
-  if VarName='MidCV' then Value:=LabeledEdit10.Text;
-  if VarName='LowCV' then Value:=LabeledEdit22.Text;
+  LoadGroupName(TComboBox(Sender),'select name from CommCode WITH(NOLOCK) where TypeName=''样本类型'' ');
 end;
 
 initialization
